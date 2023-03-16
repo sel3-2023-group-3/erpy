@@ -1,6 +1,6 @@
 import dataclasses
 import json
-from typing import Dict
+from typing import Dict, TypeVar, Any, dataclass_transform, Type
 
 
 class Config2JSONEncoder(json.JSONEncoder):
@@ -13,9 +13,18 @@ class Config2JSONEncoder(json.JSONEncoder):
             return str(o)
 
 
-def config2json(config: dataclasses.dataclass) -> str:
+T = TypeVar("T")
+
+
+@dataclass_transform(
+    field_specifiers=(dataclasses.Field, dataclasses.field)
+)
+def config2json(config: Type[T]) -> str:
     return json.dumps(obj=config, cls=Config2JSONEncoder)
 
 
-def config2dict(config: dataclasses.dataclass) -> Dict:
+@dataclass_transform(
+    field_specifiers=(dataclasses.Field, dataclasses.field)
+)
+def config2dict(config: Type[T]) -> Dict:
     return json.loads(config2json(config=config))

@@ -34,12 +34,15 @@ class DefaultReproducer(Reproducer):
             population.to_evaluate.add(genome_id)
 
     def reproduce(self, population: Population) -> None:
-        amount_to_create = population.config.population_size - len(population.to_evaluate)
+        amount_to_create = population.config.population_size - \
+            len(population.to_evaluate)
 
         for _ in range(amount_to_create):
             parent_id = erpy.random_state.choice(list(population.to_reproduce))
             parent_genome = population.genomes[parent_id]
             child_genome = parent_genome.mutate(self.next_genome_id)
+
+            assert child_genome is not None, "Perhaps mutate is not implemented"
 
             # Add the child to the population
             population.genomes[child_genome.genome_id] = child_genome

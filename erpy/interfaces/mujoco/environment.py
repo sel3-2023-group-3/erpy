@@ -51,10 +51,12 @@ class MJCEnvironmentConfig(EnvironmentConfig, abc.ABC):
 
     @property
     def observation_specification(self) -> Dict[str, dm_env.specs.Array]:
+        assert self._observation_specification is not None
         return self._observation_specification
 
     @property
     def action_specification(self) -> dm_env.specs.Array:
+        assert self._action_specification is not None
         return self._action_specification
 
     @property

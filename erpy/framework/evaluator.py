@@ -76,25 +76,29 @@ class EvaluationActor(metaclass=abc.ABCMeta):
 
 class EvaluationCallback(metaclass=abc.ABCMeta):
     def __init__(self, name: Optional[str] = None) -> None:
-        self._ea_config = None
-        self._config = None
+        self._ea_config: Optional[EAConfig] = None
+        self._config: Optional[EvaluatorConfig] = None
 
-        self._shared_callback_data = None
+        # TODO: this any can probably be generic
+        self._shared_callback_data: Optional[Dict[Any, str]] = None
 
         if name is None:
             name = self.__class__.__name__
         self._name = name
 
     @property
-    def shared_callback_data(self) -> Dict[any, str]:
+    def shared_callback_data(self) -> Dict[Any, str]:
+        assert self._shared_callback_data is not None
         return self._shared_callback_data
 
     @property
     def ea_config(self) -> EAConfig:
+        assert self._ea_config is not None
         return self._ea_config
 
     @property
     def config(self) -> EvaluatorConfig:
+        assert self._config is not None
         return self._config
 
     def __call__(self, *args, **kwargs):

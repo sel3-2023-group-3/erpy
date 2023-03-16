@@ -124,7 +124,8 @@ class MJCMorphologyPart(Morphology, metaclass=abc.ABCMeta):
             euler = self.mjcf_body.euler
             my_rot = Rotation.from_euler('xyz', euler).as_matrix()
 
-            self._coordinate_frame_in_world = parent_origin + parent_rot.dot(pos), parent_rot.dot(my_rot)
+            self._coordinate_frame_in_world = parent_origin + \
+                parent_rot.dot(pos), parent_rot.dot(my_rot)
         return self._coordinate_frame_in_world
 
     def world_coordinates_of_point(self, point: np.ndarray) -> np.ndarray:

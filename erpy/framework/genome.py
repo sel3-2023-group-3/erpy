@@ -32,7 +32,8 @@ class ESGenomeConfig(GenomeConfig):
 
         rescaled_parameters = []
         for param, value in zip(params, parameters):
-            rescaled_value = renormalize(value, [0, 1], [param.low, param.high])
+            rescaled_value = renormalize(
+                value, (0, 1), (param.low, param.high))
             rescaled_parameters.append(rescaled_value)
 
         return np.array(rescaled_parameters)
@@ -42,7 +43,8 @@ class ESGenomeConfig(GenomeConfig):
 
         normalised_parameters = []
         for parameter in parameters:
-            normalised_value = renormalize(parameter.value, [parameter.low, parameter.high], [0, 1])
+            normalised_value = renormalize(
+                parameter.value, (parameter.low, parameter.high), (0, 1))
             normalised_parameters.append(normalised_value)
 
         return np.array(normalised_parameters)
@@ -61,7 +63,7 @@ class ESGenomeConfig(GenomeConfig):
 
 
 class Genome(abc.ABC):
-    def __init__(self, config: GenomeConfig, genome_id: int, parent_genome_id: Optional[int] = None) -> None:
+    def __init__(self, config: Optional[GenomeConfig], genome_id: int, parent_genome_id: Optional[int] = None) -> None:
         self._config = config
         self._genome_id = genome_id
         self._parent_genome_id = parent_genome_id
@@ -78,14 +80,17 @@ class Genome(abc.ABC):
 
     @property
     def parent_genome_id(self) -> int:
+        assert self._parent_genome_id is not None
         return self._parent_genome_id
 
     @property
     def config(self) -> GenomeConfig:
+        assert self._config is not None
         return self._config
 
     @property
     def specification(self) -> RobotSpecification:
+        assert self._specification is not None
         return self._specification
 
     @staticmethod
@@ -110,7 +115,8 @@ class Genome(abc.ABC):
 
 class DummyGenome(Genome):
     def __init__(self, genome_id: int, specification: RobotSpecification) -> None:
-        super(DummyGenome, self).__init__(config=None, genome_id=genome_id, parent_genome_id=None)
+        super(DummyGenome, self).__init__(config=None,
+                                          genome_id=genome_id, parent_genome_id=None)
         self._specification = specification
 
     @property
@@ -140,6 +146,7 @@ class ESGenome(Genome, ABC):
 
     @property
     def config(self) -> ESGenomeConfig:
+        assert self._config is not None
         return self._config
 
     @staticmethod
@@ -156,11 +163,12 @@ class ESGenome(Genome, ABC):
     def specification(self) -> RobotSpecification:
         if self._specification is None:
             self._specification = self.config.base_specification()
-            params = self.config.extract_parameters(specification=self._specification)
+            params = self.config.extract_parameters(
+                specification=self._specification)
 
             for param, value in zip(params, self._parameters):
                 if isinstance(param, ContinuousParameter):
-                    value = renormalize(value, [0, 1], [param.low, param.high])
+                    value = renormalize(value, (0, 1), (param.low, param.high))
                 param.value = value
 
         return self._specification

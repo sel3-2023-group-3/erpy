@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Type, Union, Any, Iterable
+from typing import List, Type, Union, Any, Iterable, Optional
 
 import numpy as np
 import wandb
@@ -23,10 +23,11 @@ class WandBLoggerConfig(LoggerConfig):
     update_saver_path: bool
     pre_initialise_wandb: bool = True
     enable_tensorboard_backend: bool = False
-    _run_name: str = None
+    _run_name: Optional[str] = None
 
     @property
     def run_name(self) -> str:
+        assert self._run_name is not None
         return self._run_name
 
     @run_name.setter
@@ -60,7 +61,7 @@ class WandBLogger(Logger):
     def __init__(self, config: EAConfig):
         super().__init__(config=config)
 
-        self.run = None
+        self.run: Optional[WandBRun] = None
         if self.config.pre_initialise_wandb:
             self._initialise_wandb()
 
@@ -70,6 +71,7 @@ class WandBLogger(Logger):
                               tags=self.config.tags,
                               config=config2dict(self.config),
                               sync_tensorboard=self.config.enable_tensorboard_backend)
+        assert self.run is not None
         self.config.run_name = self.run.name
         self._update_saver_path()
 
@@ -78,6 +80,7 @@ class WandBLogger(Logger):
         return super().config
 
     def _update_saver_path(self):
+        assert self.run is not None
         if self.config.update_saver_path:
             # Update the saver's path with wandb's run name
             previous_path = Path(self._ea_config.saver_config.save_path)
@@ -86,14 +89,19 @@ class WandBLogger(Logger):
             self._ea_config.saver_config.save_path = str(new_path)
 
     def _log_fitness(self, population: Population) -> None:
+        assert self.run is not None
         fitnesses = [er.fitness for er in population.evaluation_results]
-        wandb_log_values(run=self.run, name='generation/fitness', values=fitnesses, step=population.generation)
+        wandb_log_values(run=self.run, name='generation/fitness',
+                         values=fitnesses, step=population.generation)
 
     def _log_population_data(self, population: Population) -> None:
+        assert self.run is not None
         for name, data in population.logging_data:
-            wandb_log_unknown(run=self.run, name=name, data=data, step=population.generation)
+            wandb_log_unknown(run=self.run, name=name,
+                              data=data, step=population.generation)
 
     def _log_evaluation_result_data(self, population: Population) -> None:
+        assert self.run is not None
         # log info from evaluation result's info
         try:
             er_log_keys = [key for key in population.evaluation_results[0].info.keys() if
@@ -101,14 +109,19 @@ class WandBLogger(Logger):
             for key in er_log_keys:
                 name = "evaluation_results/" + key.replace("logging_", "")
                 values = [er.info[key] for er in population.evaluation_results]
-                wandb_log_unknown(run=self.run, name=name, data=values, step=population.generation)
+                wandb_log_unknown(run=self.run, name=name,
+                                  data=values, step=population.generation)
         except IndexError:
             pass
 
     def _log_failures(self, population: Population) -> None:
-        failures = [er.info["episode_failures"] for er in population.evaluation_results]
-        physics_failures = sum([er_failure["physics"] for er_failure in failures])
-        wandb_log_value(run=self.run, name="episode_failures", value=physics_failures, step=population.generation)
+        assert self.run is not None
+        failures = [er.info["episode_failures"]
+                    for er in population.evaluation_results]
+        physics_failures = sum([er_failure["physics"]
+                               for er_failure in failures])
+        wandb_log_value(run=self.run, name="episode_failures",
+                        value=physics_failures, step=population.generation)
 
     def log(self, population: Population) -> None:
         if self.run is None:

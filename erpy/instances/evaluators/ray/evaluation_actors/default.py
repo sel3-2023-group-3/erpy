@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Type, Callable
+from typing import Type, Callable, Optional
 
 import gym
 import ray
@@ -36,9 +36,11 @@ def ray_default_evaluation_actor_factory(config: EAConfig) -> Type[EvaluationAct
             return super().config
 
         def _create_environment(self, robot: Robot) -> gym.vector.VectorEnv:
-            self._callback.update_environment_config(self.config.environment_config)
+            self._callback.update_environment_config(
+                self.config.environment_config)
             environment = create_vectorized_environment(
-                morphology_generator=lambda: self.config.robot(robot.specification).morphology,
+                morphology_generator=lambda: self.config.robot(
+                    robot.specification).morphology,
                 environment_config=self.config.environment_config,
                 number_of_environments=self.config.num_cores_per_worker)
             self._callback.from_env(environment)
@@ -46,11 +48,13 @@ def ray_default_evaluation_actor_factory(config: EAConfig) -> Type[EvaluationAct
 
         def evaluate(self, genome: Genome) -> EvaluationResult:
             shared_callback_data = dict()
-            self._callback.before_evaluation(config=self._ea_config, shared_callback_data=shared_callback_data)
+            self._callback.before_evaluation(
+                config=self._ea_config, shared_callback_data=shared_callback_data)
 
             self._callback.from_genome(genome)
 
-            robot, env = None, None
+            robot = None
+            env: Optional[gym.vector.VectorEnv] = None
 
             episode_fitnesses = []
             episode_frames = []
@@ -68,12 +72,15 @@ def ray_default_evaluation_actor_factory(config: EAConfig) -> Type[EvaluationAct
                         robot = self.config.robot(genome.specification)
                         self._callback.from_robot(robot)
 
-                        self._callback.update_environment_config(self.config.environment_config)
+                        self._callback.update_environment_config(
+                            self.config.environment_config)
                         env = self._create_environment(robot=robot)
                         robot.controller.set_environment(env)
                         self._callback.from_env(env)
 
                     robot.reset()
+
+                    assert env is not None
                     observations = env.reset()
 
                     frames = []
@@ -83,7 +90,8 @@ def ray_default_evaluation_actor_factory(config: EAConfig) -> Type[EvaluationAct
                     while not done:
                         actions = robot(observations)
 
-                        self._callback.before_step(observations=observations, actions=actions)
+                        self._callback.before_step(
+                            observations=observations, actions=actions)
                         observations, reward, done, info = env.step(actions)
 
                         self._callback.after_step(observations=observations, actions=actions,
@@ -98,16 +106,20 @@ def ray_default_evaluation_actor_factory(config: EAConfig) -> Type[EvaluationAct
 
                     episode_frames.append(frames)
                 except PhysicsError:
+                    assert env is not None
                     physics_failures += 1
-                    env.close()
+                    if env is not None:
+                        env.close()
                     episode_fitnesses.append(-1)
                     break
                 except AssertionError:
                     validity_failures += 1
-                    env.close()
+                    if env is not None:
+                        env.close()
                     episode_fitnesses.append(-1)
 
-            env.close()
+            if env is not None:
+                env.close()
             fitness = self.config.episode_aggregator(episode_fitnesses)
             evaluation_result = EvaluationResult(genome=genome, fitness=fitness,
                                                  info={"episode_failures": {"physics": physics_failures,

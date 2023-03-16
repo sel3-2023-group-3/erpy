@@ -19,14 +19,14 @@ class SBControllerSpecification(ControllerSpecification):
         self.algorithm = algorithm
         self.sb_model_arguments = stable_baseline_model_arguments
 
-        self.path_to_model = None
-        self.path_to_tensorboard_logs = None
+        self.path_to_model: Optional[str] = None
+        self.path_to_tensorboard_logs: Optional[str] = None
 
 
 class SBController(Controller):
     def __init__(self, specification: RobotSpecification):
         super().__init__(specification=specification)
-        self.model: BaseAlgorithm = None
+        self.model: Optional[BaseAlgorithm] = None
 
     @property
     def controller_specification(self) -> SBControllerSpecification:
@@ -35,6 +35,7 @@ class SBController(Controller):
     def _initialise_model(self, environment: Environment) -> None:
         if self.model is None:
             if self.controller_specification.path_to_tensorboard_logs is None:
+                assert wandb.run is not None
                 self.controller_specification.path_to_tensorboard_logs = f"/tmp/erpy/runs/{wandb.run.id}/"
             self.model = self.controller_specification.algorithm(
                 env=environment,
@@ -50,6 +51,8 @@ class SBController(Controller):
 
     def set_environment(self, environment: Environment) -> None:
         self._initialise_model(environment=environment)
+
+        assert self.model is not None
         if self.model.env is None or self.model.n_envs != environment.num_envs:
             self.model = self.controller_specification.algorithm.load(path=self.controller_specification.path_to_model,
                                                                       tensorboard_log=self.controller_specification.path_to_tensorboard_logs,
@@ -59,18 +62,24 @@ class SBController(Controller):
 
     def __call__(self, observations: Union[np.ndarray, Dict[str, np.ndarray]],
                  deterministic: bool = True, *args, **kwargs) -> np.ndarray:
-        actions, _ = self.model.predict(observation=observations, deterministic=deterministic, *args, **kwargs)
+        assert self.model is not None
+        actions, _ = self.model.predict(
+            observation=observations, deterministic=deterministic, *args, **kwargs)
         return actions
 
     def predict(self, observations: Union[np.ndarray, Dict[str, np.ndarray]], *args, **kwargs) -> Tuple[
-        np.ndarray, Optional[np.ndarray]]:
+            np.ndarray, Optional[np.ndarray]]:
+        assert self.model is not None
         return self.model.predict(observation=observations, *args, **kwargs)
 
     def save(self, path: str) -> None:
+        assert self.model is not None
         self.model.save(path=path)
         self.controller_specification.path_to_model = path
 
     def learn(self, total_timesteps: int, callback: Union[evaluator.EvaluationCallback, BaseCallback]) -> None:
+        assert self.model is not None
+        assert wandb.run is not None
         self.model.learn(total_timesteps=total_timesteps,
                          callback=callback,
                          reset_num_timesteps=False,  # This needs to be false to allow continual learning!

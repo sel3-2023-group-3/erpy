@@ -21,7 +21,7 @@ class EAConfig:
     saver_config: SaverConfig
 
     cli_args: Optional[Dict[str, Any]] = None
-    checkpoint_path: str = None
+    checkpoint_path: Optional[str] = None
     num_generations: Optional[int] = None
     num_evaluations: Optional[int] = None
 
@@ -106,7 +106,7 @@ class EA:
         return genomes, self.analyze_genomes(genomes)
 
     def analyze_specifications(self, specifications: List[RobotSpecification]) -> Tuple[
-        List[Genome], Dict[int, EvaluationResult]]:
+            List[Genome], Dict[int, EvaluationResult]]:
         genomes = [DummyGenome(genome_id=i, specification=specification) for i, specification in
                    enumerate(specifications)]
         return genomes, self.analyze_genomes(genomes=genomes)

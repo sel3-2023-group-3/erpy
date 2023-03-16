@@ -1,6 +1,8 @@
 import logging
 from pathlib import Path
 
+from typing import Optional
+
 import gym
 import numpy as np
 from PIL import Image
@@ -14,11 +16,11 @@ class VideoCallback(EvaluationCallback):
     def __init__(self):
         super().__init__()
         self._frames = []
-        self._env = None
+        self._env: Optional[gym.Env] = None
         self._genome_id = None
         self._episode_index = 0
 
-        self._save_path = None
+        self._save_path: Optional[Path] = None
 
     def from_env(self, env: gym.Env) -> None:
         self._env = env
@@ -27,16 +29,24 @@ class VideoCallback(EvaluationCallback):
         self._genome_id = genome.genome_id
 
     def before_step(self, observations, actions) -> None:
+        assert self._env is not None
         self._frames.append(self._env.render())
 
     def before_episode(self) -> None:
-        self._save_path = Path(self._ea_config.saver_config.analysis_path) / "videos" / f"episode_{self._episode_index}"
+        assert self._ea_config is not None
+        self._save_path = Path(self._ea_config.saver_config.analysis_path) / \
+            "videos" / f"episode_{self._episode_index}"
         self._save_path.mkdir(parents=True, exist_ok=True)
 
     def after_episode(self) -> None:
-        fps = len(self._frames) / self.config.environment_config.simulation_time
-        path = self._save_path / f'genome_{self._genome_id}_episode_{self._episode_index}.mp4'
-        logging.info(f'Creating video of {len(self._frames)} frames (fps: {fps}) and saving to {str(path)}')
+        assert self._save_path is not None
+
+        fps = len(self._frames) / \
+            self.config.environment_config.simulation_time
+        path = self._save_path / \
+            f'genome_{self._genome_id}_episode_{self._episode_index}.mp4'
+        logging.info(
+            f'Creating video of {len(self._frames)} frames (fps: {fps}) and saving to {str(path)}')
 
         create_video(frames=self._frames, framerate=fps,
                      out_path=str(path))
@@ -50,12 +60,12 @@ class FrameSaverCallback(EvaluationCallback):
         super().__init__()
 
         self._frames = []
-        self._env = None
+        self._env: Optional[gym.Env] = None
         self._genome_id = None
         self._episode_index = 0
 
         self._step_index = 0
-        self._save_path = None
+        self._save_path: Optional[Path] = None
         self._save_frequency = save_frequency
 
     def from_env(self, env: gym.Env) -> None:
@@ -65,18 +75,23 @@ class FrameSaverCallback(EvaluationCallback):
         self._genome_id = genome.genome_id
 
     def before_step(self, observations, actions) -> None:
+        assert self._env is not None
         if self._step_index % self._save_frequency == 0:
             self._frames.append(self._env.render())
         self._step_index += 1
 
     def before_episode(self) -> None:
-        self._save_path = Path(self._ea_config.saver_config.analysis_path) / "frames" / f"episode_{self._episode_index}"
+        assert self._ea_config is not None
+        self._save_path = Path(self._ea_config.saver_config.analysis_path) / \
+            "frames" / f"episode_{self._episode_index}"
         self._save_path.mkdir(parents=True, exist_ok=True)
 
     def after_episode(self) -> None:
+        assert self._save_path is not None
         for i, frame in enumerate(self._frames):
             timestamp = i * self.config.environment_config.control_timestep
-            path = self._save_path / f'genome_{self._genome_id}_frame_{timestamp}_s.png'
+            path = self._save_path / \
+                f'genome_{self._genome_id}_frame_{timestamp}_s.png'
             frame = np.flip(frame, axis=2)
             image = Image.fromarray(frame, mode="RGB")
             image.save(path)

@@ -16,11 +16,13 @@ class EvaluationCallbackList(EvaluationCallback):
 
     @property
     def config(self) -> EvaluatorConfig:
+        assert self._config is not None
         return self._config
 
     def before_evaluation(self, config: EAConfig,  shared_callback_data: Dict[str, Any]) -> None:
         for callback in self.callbacks:
-            callback.before_evaluation(config=config,  shared_callback_data=shared_callback_data)
+            callback.before_evaluation(
+                config=config,  shared_callback_data=shared_callback_data)
 
     def after_evaluation(self) -> None:
         for callback in self.callbacks:
@@ -53,7 +55,8 @@ class EvaluationCallbackList(EvaluationCallback):
     def after_step(self, observations: Dict[str, np.ndarray], actions: np.ndarray, rewards: Union[float, np.ndarray],
                    info: Optional[Dict[str, Any]] = None) -> None:
         for callback in self.callbacks:
-            callback.after_step(observations=observations, actions=actions, rewards=rewards, info=info)
+            callback.after_step(observations=observations,
+                                actions=actions, rewards=rewards, info=info)
 
     def update_evaluation_result(self, evaluation_result: EvaluationResult) -> None:
         for callback in self.callbacks:
@@ -61,4 +64,5 @@ class EvaluationCallbackList(EvaluationCallback):
 
     def update_environment_config(self, environment_config: EnvironmentConfig) -> None:
         for callback in self.callbacks:
-            callback.update_environment_config(environment_config=environment_config)
+            callback.update_environment_config(
+                environment_config=environment_config)

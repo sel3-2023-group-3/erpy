@@ -2,7 +2,7 @@
 Source: https://github.com/denisyarats/dmc2gym/blob/master/dmc2gym/wrappers.py
 Code was slightly adapted.
 """
-from typing import Dict
+from typing import Dict, Tuple
 
 import gym
 import numpy as np
@@ -12,7 +12,7 @@ from gym import core, spaces
 
 
 def _spec_to_box(spec, dtype):
-    def extract_min_max(s):
+    def extract_min_max(s) -> Tuple[np.ndarray, np.ndarray]:
         assert s.dtype == np.float64 or s.dtype == np.float32
         dim = int(np.prod(s.shape))
         if type(s) == specs.Array:
@@ -21,6 +21,9 @@ def _spec_to_box(spec, dtype):
         elif type(s) == specs.BoundedArray:
             zeros = np.zeros(dim, dtype=np.float32)
             return s.minimum + zeros, s.maximum + zeros
+        else:
+            assert False, "Expected Array of BoundedArray but got " + \
+                str(type(s))
 
     mins, maxs = [], []
     for s in spec:
@@ -39,7 +42,7 @@ def _spec_to_box(spec, dtype):
 
 
 def _spec_to_dict(spec, dtype):
-    def extract_min_max(s):
+    def extract_min_max(s) -> Tuple[np.ndarray, np.ndarray]:
         assert s.dtype == np.float64 or s.dtype == np.float32
         dim = int(np.prod(s.shape))
         if type(s) == specs.Array:
@@ -48,6 +51,9 @@ def _spec_to_dict(spec, dtype):
         elif type(s) == specs.BoundedArray:
             zeros = np.zeros(dim, dtype=np.float32)
             return s.minimum + zeros, s.maximum + zeros
+        else:
+            assert False, "Expected Array of BoundedArray but got " + \
+                str(type(s))
 
     d = dict()
     for key, array in spec.items():
@@ -68,7 +74,7 @@ def _flatten_obs(obs):
         return np.array([])
 
 
-def get_clean_obs(timestep: TimeStep, dtype = np.float32) -> Dict[str, np.ndarray]:
+def get_clean_obs(timestep: TimeStep, dtype=np.float32) -> Dict[str, np.ndarray]:
     obs = timestep.observation
     cleaned_obs = dict()
     for key, value in obs.items():
@@ -115,7 +121,8 @@ class DMC2GymWrapper(core.Env):
 
         # create observation space
         if from_pixels:
-            shape = [3, height, width] if channels_first else [height, width, 3]
+            shape = [3, height, width] if channels_first else [
+                height, width, 3]
             self.observation_space = spaces.Box(
                 low=0, high=255, shape=shape, dtype=np.uint8
             )
@@ -161,7 +168,8 @@ class DMC2GymWrapper(core.Env):
         self.observation_space.seed(seed)
 
     def step(self, action: np.ndarray):
-        action = action.clip(min=self.action_space.low, max=self.action_space.high)
+        action = action.clip(min=self.action_space.low,
+                             max=self.action_space.high)
         reward = 0
         time_step = self._env.step(action)
         info = {}
@@ -170,7 +178,8 @@ class DMC2GymWrapper(core.Env):
         obs = self._get_obs(time_step)
 
         try:
-            info.update(self._env.task.get_info(time_step=time_step, physics=self._env.physics))
+            info.update(self._env.task.get_info(
+                time_step=time_step, physics=self._env.physics))
         except AttributeError:
             pass
         info['discount'] = time_step.discount
@@ -198,16 +207,17 @@ class DMC2GymWrapper(core.Env):
             pixels_default.append(default_frame)
 
             if self.geomgroup != [1] * 6 or self.sitegroup != [1] * 6:
-                scene_option = wrapper.core.MjvOption()
-                scene_option.geomgroup = self.geomgroup
-                scene_option.sitegroup = self.sitegroup
+                assert False, "MjvOption does not exist"
+                # scene_option = wrapper.core.MjvOption()
+                # scene_option.geomgroup = self.geomgroup
+                # scene_option.sitegroup = self.sitegroup
 
-                frame = self._env.physics.render(
-                    height=height, width=width, camera_id=camera_id,
-                    scene_option=scene_option
-                )
-                frame = frame[:, :, ::-1]
-                pixels_specific.append(frame)
+                # frame = self._env.physics.render(
+                #     height=height, width=width, camera_id=camera_id,
+                #     scene_option=scene_option
+                # )
+                # frame = frame[:, :, ::-1]
+                # pixels_specific.append(frame)
 
         view = np.hstack(pixels_default)
         if pixels_specific:
@@ -240,7 +250,8 @@ class HistoryWrapper(gym.Wrapper):
         high = np.concatenate((high_obs, high_action))
 
         # Overwrite the observation space
-        env.observation_space = gym.spaces.Box(low=low, high=high, dtype=wrapped_obs_space.dtype)
+        env.observation_space = gym.spaces.Box(
+            low=low, high=high, dtype=wrapped_obs_space.dtype)
 
         super().__init__(env)
 
@@ -266,9 +277,11 @@ class HistoryWrapper(gym.Wrapper):
         obs, reward, done, info = self.env.step(action)
         last_ax_size = obs.shape[-1]
 
-        self.obs_history = np.roll(self.obs_history, shift=-last_ax_size, axis=-1)
+        self.obs_history = np.roll(
+            self.obs_history, shift=-last_ax_size, axis=-1)
         self.obs_history[..., -obs.shape[-1]:] = obs
 
-        self.action_history = np.roll(self.action_history, shift=-action.shape[-1], axis=-1)
+        self.action_history = np.roll(
+            self.action_history, shift=-action.shape[-1], axis=-1)
         self.action_history[..., -action.shape[-1]:] = action
         return self._create_obs_from_history(), reward, done, info

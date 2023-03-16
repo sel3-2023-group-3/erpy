@@ -1,4 +1,4 @@
-from typing import Type, Dict, Any
+from typing import Type, Dict, Any, Optional
 
 from stable_baselines3.common.callbacks import BaseCallback
 
@@ -11,7 +11,7 @@ class EvaluationCallbackWrapper(EvaluationCallback):
     def __init__(self, callback: Type[BaseCallback], **kwargs):
         super().__init__()
         self._callback_creator = callback
-        self._callback = None
+        self._callback: Optional[BaseCallback] = None
         self._kwargs = kwargs
 
     def before_evaluation(self, config: EAConfig, shared_callback_data: Dict[str, Any]) -> None:

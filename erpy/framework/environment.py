@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import abc
 from dataclasses import dataclass
-from typing import Union
+from typing import Union, Optional
 
 import dm_control.composer
 import gym
@@ -16,17 +16,19 @@ Environment = Union[gym.Env, dm_control.composer.Environment, VecEnv]
 
 @dataclass
 class EnvironmentConfig(metaclass=abc.ABCMeta):
-    _observation_specification = None
-    _action_specification = None
+    _observation_specification: Optional[gym.Space] = None
+    _action_specification: Optional[gym.Space] = None
 
     @abc.abstractmethod
     def environment(self, morphology: phenome.Morphology) -> Environment:
         raise NotImplementedError
 
     def observation_specification(self) -> gym.Space:
+        assert self._observation_specification is not None
         return self._observation_specification
 
     def action_specification(self) -> gym.Space:
+        assert self._action_specification is not None
         return self._action_specification
 
     @property

@@ -41,12 +41,15 @@ class UniqueReproducer(Reproducer):
             population.saving_data[key] = self._archive
 
     def initialise_population(self, population: Population) -> None:
+        assert self._archive is not None
+
         self._initialise_from_checkpoint(population=population)
 
         if self.config.initialisation_f is not None:
             self.config.initialisation_f(self, population)
         else:
-            num_to_generate = population.config.population_size - len(population.to_evaluate)
+            num_to_generate = population.config.population_size - \
+                len(population.to_evaluate)
 
             for i in tqdm(range(num_to_generate), desc="[UniqueReproducer] Initialisation"):
                 # Create genome
@@ -60,6 +63,8 @@ class UniqueReproducer(Reproducer):
                     genome = self.config.genome_config.genome.generate(config=self.config.genome_config,
                                                                        genome_id=genome_id)
 
+                    num_retries += 1
+
                 # Add genome to population
                 population.genomes[genome_id] = genome
 
@@ -67,6 +72,8 @@ class UniqueReproducer(Reproducer):
                 population.to_evaluate.add(genome_id)
 
     def reproduce(self, population: Population) -> None:
+        assert self._archive is not None
+
         for parent_id in tqdm(population.to_reproduce, desc="[UniqueReproducer] reproduce"):
             parent_genome = population.genomes[parent_id]
 
@@ -98,8 +105,10 @@ class UniqueReproducer(Reproducer):
                 # New children should always be evaluated
                 population.to_evaluate.add(child_genome.genome_id)
 
-        population.logging_data["UniqueReproducer/number_of_unique_genomes"] = len(self._archive)
+        population.logging_data["UniqueReproducer/number_of_unique_genomes"] = len(
+            self._archive)
 
     @property
     def archive(self) -> Set:
+        assert self._archive is not None
         return self._archive
