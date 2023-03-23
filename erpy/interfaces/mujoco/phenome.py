@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import abc
 from abc import ABC
-from typing import Union, List
+from typing import List
 
 import numpy as np
 from dm_control import composer, mjcf
@@ -66,7 +66,8 @@ class MJCMorphology(Morphology, composer.Entity, metaclass=abc.ABCMeta):
 
 
 class MJCMorphologyPart(Morphology, metaclass=abc.ABCMeta):
-    def __init__(self, parent: Union[MJCMorphology, MJCMorphologyPart],
+    def __init__(self,
+                 parent: Morphology,
                  name: str,
                  pos: np.array,
                  euler: np.array,

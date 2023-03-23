@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Type, Union, Any, Iterable, Optional
+from typing import List, Optional, Type, Union, Any, Iterable, cast
 
 import numpy as np
 import wandb
@@ -18,7 +18,7 @@ WandBRun = wandb.wandb_sdk.wandb_run.Run
 @dataclass
 class WandBLoggerConfig(LoggerConfig):
     project_name: str
-    group: str
+    group: Optional[str]
     tags: List[str]
     update_saver_path: bool
     pre_initialise_wandb: bool = True
@@ -66,6 +66,8 @@ class WandBLogger(Logger):
             self._initialise_wandb()
 
     def _initialise_wandb(self) -> None:
+        assert self.run is not None
+
         self.run = wandb.init(project=self.config.project_name,
                               group=self.config.group,
                               tags=self.config.tags,
@@ -77,10 +79,11 @@ class WandBLogger(Logger):
 
     @property
     def config(self) -> WandBLoggerConfig:
-        return super().config
+        return cast(WandBLoggerConfig, super().config)
 
     def _update_saver_path(self):
         assert self.run is not None
+
         if self.config.update_saver_path:
             # Update the saver's path with wandb's run name
             previous_path = Path(self._ea_config.saver_config.save_path)
@@ -102,6 +105,7 @@ class WandBLogger(Logger):
 
     def _log_evaluation_result_data(self, population: Population) -> None:
         assert self.run is not None
+
         # log info from evaluation result's info
         try:
             er_log_keys = [key for key in population.evaluation_results[0].info.keys() if

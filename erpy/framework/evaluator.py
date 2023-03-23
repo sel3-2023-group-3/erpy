@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import abc
 from dataclasses import dataclass
-from typing import Callable, Iterable, Dict, Any, Type, TYPE_CHECKING, Optional, Union
+from typing import Callable, Iterable, Dict, Any, Type, TYPE_CHECKING, Optional, Union, cast
 
 import gym
 import numpy as np

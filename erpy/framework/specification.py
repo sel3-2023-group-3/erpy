@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import abc
 import pickle
-from typing import List, Iterable, TYPE_CHECKING, Callable
+from typing import List, Iterable, TYPE_CHECKING, Callable, Optional
 
 from erpy.framework.parameters import Parameter, FixedParameter
 
@@ -41,7 +41,7 @@ class Specification(metaclass=abc.ABCMeta):
 
 class RobotSpecification(Specification, metaclass=abc.ABCMeta):
     def __init__(self, morphology_specification: MorphologySpecification,
-                 controller_specification: ControllerSpecification) -> None:
+                 controller_specification: Optional[ControllerSpecification]) -> None:
         super().__init__()
         self._morphology_specification = morphology_specification
         self._controller_specification = controller_specification
@@ -52,6 +52,7 @@ class RobotSpecification(Specification, metaclass=abc.ABCMeta):
 
     @property
     def controller_specification(self) -> ControllerSpecification:
+        assert self._controller_specification is not None
         return self._controller_specification
 
     @property
@@ -100,7 +101,7 @@ class SpecificationParameterizer(metaclass=abc.ABCMeta):
 
 class RobotSpecificationParameterizer(SpecificationParameterizer, metaclass=abc.ABCMeta):
     def __init__(self,
-                 specification_generator: Callable[[], RobotSpecification],
+                 specification_generator: Optional[Callable[[], RobotSpecification]],
                  morphology_parameterizer: MorphologySpecificationParameterizer,
                  controller_parameterizer: ControllerSpecificationParameterizer) -> None:
         super().__init__()
@@ -109,10 +110,13 @@ class RobotSpecificationParameterizer(SpecificationParameterizer, metaclass=abc.
         self._controller_parameterizer = controller_parameterizer
 
     def parameterize_specification(self, specification: RobotSpecification):
-        self._morphology_parameterizer.parameterize_specification(specification.morphology_specification)
-        self._controller_parameterizer.parameterize_specification(specification.controller_specification)
+        self._morphology_parameterizer.parameterize_specification(
+            specification.morphology_specification)
+        self._controller_parameterizer.parameterize_specification(
+            specification.controller_specification)
 
     def generate_parameterized_specification(self) -> RobotSpecification:
+        assert self._specification_generator is not None
         robot_specification = self._specification_generator()
         self.parameterize_specification(robot_specification)
         return robot_specification
@@ -125,8 +129,10 @@ class RobotSpecificationParameterizer(SpecificationParameterizer, metaclass=abc.
         return morphology_parameters + controller_parameters
 
     def get_parameter_labels(self, specification: RobotSpecification) -> List[str]:
-        morphology_labels = self._morphology_parameterizer.get_parameter_labels(specification.morphology_specification)
-        controller_labels = self._controller_parameterizer.get_parameter_labels(specification.controller_specification)
+        morphology_labels = self._morphology_parameterizer.get_parameter_labels(
+            specification.morphology_specification)
+        controller_labels = self._controller_parameterizer.get_parameter_labels(
+            specification.controller_specification)
         return morphology_labels + controller_labels
 
 
