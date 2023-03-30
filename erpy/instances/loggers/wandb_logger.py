@@ -66,13 +66,12 @@ class WandBLogger(Logger):
             self._initialise_wandb()
 
     def _initialise_wandb(self) -> None:
-        assert self.run is not None
-
         self.run = wandb.init(project=self.config.project_name,
                               group=self.config.group,
                               tags=self.config.tags,
                               config=config2dict(self.config),
                               sync_tensorboard=self.config.enable_tensorboard_backend)
+
         assert self.run is not None
         self.config.run_name = self.run.name
         self._update_saver_path()
