@@ -86,6 +86,8 @@ class WandBLogger(Logger):
         if self.config.update_saver_path:
             # Update the saver's path with wandb's run name
             previous_path = Path(self._ea_config.saver_config.save_path)
+            if (self.run.name is None):
+                self.run.name = "unknown_run"
             new_path = previous_path / self.run.name
             new_path.mkdir(exist_ok=True, parents=True)
             self._ea_config.saver_config.save_path = str(new_path)
