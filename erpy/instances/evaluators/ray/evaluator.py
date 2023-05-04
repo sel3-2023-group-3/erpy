@@ -57,7 +57,8 @@ class RayDistributedEvaluator(Evaluator):
         ray.init(log_to_driver=self.config.log_to_driver,
                  logging_level=self.config.logging_level,
                  local_mode=self.config.debug,
-                 address="auto" if self.config.cluster else None)
+                 address="auto" if self.config.cluster else None,
+                 ignore_reinit_error=True)
 
     def _build_pool(self) -> None:
         if self.pool is not None:
@@ -70,7 +71,8 @@ class RayDistributedEvaluator(Evaluator):
         all_genomes = population.genomes
         target_genome_ids = population.to_evaluate
 
-        target_genomes = [all_genomes[genome_id] for genome_id in target_genome_ids]
+        target_genomes = [all_genomes[genome_id]
+                          for genome_id in target_genome_ids]
 
         for genome in tqdm(target_genomes,
                            desc=f"[RayDistributedEvaluator] Generation {population.generation}\t-\tSending jobs to workers"):
@@ -84,11 +86,13 @@ class RayDistributedEvaluator(Evaluator):
         timeout = None
         while self.pool.has_next():
             try:
-                evaluation_result = self.pool.get_next_unordered(timeout=timeout)
+                evaluation_result = self.pool.get_next_unordered(
+                    timeout=timeout)
                 population.evaluation_results.append(evaluation_result)
                 timeout = self.config.evaluation_timeout
                 pbar.update(1)
             except TimeoutError:
-                logging.info("[RayDistributedEvaluator] time threshold exceeded")
+                logging.info(
+                    "[RayDistributedEvaluator] time threshold exceeded")
                 break
         pbar.close()
